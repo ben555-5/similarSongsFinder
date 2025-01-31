@@ -4,31 +4,37 @@ from tinytag import TinyTag
 import discogs_client
 import re
 from discogs_library import search_song_by_title
+from youtube_search import YoutubeSearch
+from pathlib import Path
+from pytube import YouTube
+import argparse
 
-VALID_EXTENSIONS = {".mp3", ".wav"}
+youtube_url = ""
+AUDIO_SAVE_DIRECTORY = "./audio"
+results = YoutubeSearch(input("Search a song (youtube title): "), max_results=1).to_dict()
+for v in results:
+    youtube_url = 'https://www.youtube.com' + v['url_suffix']
+    print(youtube_url)
 
-# Receive file path from user
-while True:
-    file_path = input("Please enter the path to your audio file: ")
 
-    # Check if the file exists
-    if not os.path.exists(file_path):
-        print("Error: File does not exist. Please enter a valid file path.")
-        continue
+file_path = str(Path.home() / "Downloads")
 
-    # Check if the file extension is valid
-    _, ext = os.path.splitext(file_path)
-    if ext.lower() not in VALID_EXTENSIONS:
-        print("Error: Invalid file format. Please enter a valid audio file (.mp3, .wav).")
-        continue
+def download_video(url, output_path):
+    output_path = file_path
+    url = youtube_url
 
-    print("Valid file path received!")
-    break
 
-tag: TinyTag = TinyTag.get(file_path)
 
-# Load audio file into librosa
-y, sr = librosa.load(file_path)
+
+
+
+print(f"Downloaded and converted to MP3: {mp3_file}")
+
+
+yt = YouTube(youtube_url)
+print(dir(yt))
+
+y, sr = librosa.load()
 
 
 # Detect tempo
@@ -39,8 +45,8 @@ track_genre = tag.genre
 track_duration = tag.duration
 
 
-def remove_excess_tags(track_title):
-    new_track_title = track_title
+def remove_excess_tags(t_title):
+    new_track_title = t_title
     new_track_title = re.sub(r"\(.*?\)", "", new_track_title)
     new_track_title = re.sub(r"\[.*?\]", "", new_track_title)
     new_track_title = re.sub(r"\|.*", "", new_track_title)
@@ -51,7 +57,7 @@ clean_name = remove_excess_tags(tag.title)
 
 
 result = search_song_by_title(clean_name)
-if result == None:
+if result is None:
     exit()
 
 
@@ -60,7 +66,7 @@ song_data = {
     "title": result.title,
     "release_year": result.year,
     "country": result.country,
-    "duration":tag.duration,
+    "duration": tag.duration,
     "styles": result.styles
 }
 
@@ -81,3 +87,4 @@ def filter_track(track):
 # tag.other.get()
 # d:\Users\Ben\Downloads\SNOOP DOGG - Conflicted feat. NAS  [Acapella-Vocals Only]  [91 BPM - Bm]  by EC13 - Acapella Boulevard.mp3
 # d:\Users\Ben\Downloads\youtube_JGwWNGJdvx8_audio.mp3
+#C:\Users\Student\Downloads\youtube_Vds8ddYXYZY_audio.mp3
