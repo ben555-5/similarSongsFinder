@@ -6,7 +6,7 @@ import re
 from discogs_library import search_song_by_title
 from youtube_search import YoutubeSearch
 from pathlib import Path
-from pytube import YouTube
+import urllib.request
 import argparse
 
 youtube_url = ""
@@ -17,24 +17,21 @@ for v in results:
     print(youtube_url)
 
 
-file_path = str(Path.home() / "Downloads")
+file_path = str(r"c:\ben\test.mp3")
+
 
 def download_video(url, output_path):
     output_path = file_path
     url = youtube_url
 
+    mp3_file = urllib.request.urlretrieve(url, file_path)
+
+    return mp3_file
 
 
+print(f"Downloaded and converted to MP3: {download_video(youtube_url, file_path)}")
 
-
-
-print(f"Downloaded and converted to MP3: {mp3_file}")
-
-
-yt = YouTube(youtube_url)
-print(dir(yt))
-
-y, sr = librosa.load()
+y, sr = librosa.load(file_path)
 
 
 # Detect tempo
@@ -43,7 +40,7 @@ track_title = tag.title
 track_year = tag.year
 track_genre = tag.genre
 track_duration = tag.duration
-
+print(f"Downloaded and converted to MP3: {track_title}")
 
 def remove_excess_tags(t_title):
     new_track_title = t_title
@@ -87,4 +84,4 @@ def filter_track(track):
 # tag.other.get()
 # d:\Users\Ben\Downloads\SNOOP DOGG - Conflicted feat. NAS  [Acapella-Vocals Only]  [91 BPM - Bm]  by EC13 - Acapella Boulevard.mp3
 # d:\Users\Ben\Downloads\youtube_JGwWNGJdvx8_audio.mp3
-#C:\Users\Student\Downloads\youtube_Vds8ddYXYZY_audio.mp3
+# C:\Users\Student\Downloads\youtube_Vds8ddYXYZY_audio.mp3
