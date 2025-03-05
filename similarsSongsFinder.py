@@ -17,23 +17,6 @@ for v in results:
     print(youtube_url)
 
 
-file_path = str(r"c:\ben\test.mp3")
-
-
-def download_video(url, output_path):
-    output_path = file_path
-    url = youtube_url
-
-    mp3_file = urllib.request.urlretrieve(url, file_path)
-
-    return mp3_file
-
-
-print(f"Downloaded and converted to MP3: {download_video(youtube_url, file_path)}")
-
-y, sr = librosa.load(file_path)
-
-
 # Detect tempo
 tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
 track_title = tag.title
