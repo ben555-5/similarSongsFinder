@@ -11,6 +11,3 @@ def fetchTrendingSongs():
             break
         counter += 1
     print(counter)
-
-
-
