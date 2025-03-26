@@ -2,30 +2,18 @@
 
 import discogs_client
 import re
+from song_details_class import SongDetails
+from database import add_song, init
 
 #endregion imports
 
 #region global variables
 
+init()
 song_list = []
 d = discogs_client.Client('ExampleApplication/0.1', user_token="GVOasQPZopgGnCjiQpCQlsbIsvocZxzMkEsJNURq")
 
 #endregion global variables
-
-#region class's
-
-class SongDetails:
-    """ song details """
-    def __init__(self, title, year, country, styles="none"):
-        self.title = title
-        self.year = year,
-        self.country = country,
-        self.styles = styles
-
-    def __str__(self):
-        return f"{self.title}, ({self.year})"
-
-#endregion class's
 
 #region functions
 
@@ -48,7 +36,7 @@ def clean_string(s: str) -> str:
     return s
 
 def collect_popular_songs():
-    Budget = 50
+    Budget = 5
     results = d.search(type="release", sort="hot")
     for result in results:
         for track in result.tracklist:
@@ -66,7 +54,7 @@ def collect_popular_songs():
                 "country": tmp_song.country,
                 "styles": tmp_song.styles
             }
-            song_list.append(song)
+            add_song(tmp_song)
         Budget -= 1
         if Budget == 0:
             break
