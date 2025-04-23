@@ -18,6 +18,7 @@ for v in results:
 
 
 # Detect tempo
+tag = TinyTag.get(audio_file_path)
 tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
 track_title = tag.title
 track_year = tag.year
