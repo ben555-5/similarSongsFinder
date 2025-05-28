@@ -40,62 +40,119 @@ def create_database():
             FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE
         )
     ''')
+    conn.commit()
+    conn.close()
 
 
 
 def add_song(song_details: SongDetails):
-    # Connect to the database
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
 
-    # Insert the song into the table
-    cursor.execute('''
-        INSERT INTO songs (song_name, clean_song_name, song_year, song_style, song_region)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (
-        song_details.title,
-        song_details.clean_title,
-        song_details.year,
-        json.dumps(song_details.styles),
-        song_details.country))
-
+    # Check if the song already exists (based on clean name + year)
     res = cursor.execute('''
-        SELECT last_insert_rowid()
-    ''')
-    id = res.fetchone()[0]
+        SELECT id FROM songs
+        WHERE clean_song_name = ? AND song_year = ?
+    ''', (song_details.clean_title, song_details.year)).fetchone()
 
-    # Commit and close connection
+    if res:
+        song_id = res[0]
+    else:
+        cursor.execute('''
+            INSERT INTO songs (song_name, clean_song_name, song_year, song_style, song_region)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (
+            song_details.title,
+            song_details.clean_title,
+            song_details.year,
+            json.dumps(song_details.styles),
+            song_details.country
+        ))
+        song_id = cursor.lastrowid
+
     conn.commit()
     conn.close()
+    return song_id
 
-    return id
 
 
 
 def add_artist(artist_details: ArtistDetails):
-    # Connect to the database
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
 
-    # Insert the artist into the table
-    cursor.execute('''
-        INSERT INTO artists (artist_name, clean_artist_name)
-         VALUES (?, ?)
-        ON CONFLICT(clean_artist_name) DO NOTHING
-        
-    ''', (
-        artist_details.artist_name,
-        artist_details.artist_clean_name
-    ))
     res = cursor.execute('''
-    SELECT id FROM artists WHERE clean_artist_name = ?
-    ''', (
-        artist_details.artist_clean_name
-    ))
-    print(res.fetchone())
-    # Commit and close connection
+        SELECT id FROM artists WHERE clean_artist_name = ?
+    ''', (artist_details.artist_clean_name,)).fetchone()
+
+    if res:
+        artist_id = res[0]
+    else:
+        cursor.execute('''
+            INSERT INTO artists (artist_name, clean_artist_name)
+            VALUES (?, ?)
+        ''', (
+            artist_details.artist_name,
+            artist_details.artist_clean_name
+        ))
+        artist_id = cursor.lastrowid
+
     conn.commit()
     conn.close()
+    return artist_id
+
+
+def link_song_to_artist(song_id: int, artist_id: int):
+    conn = sqlite3.connect(DATABASE_NAME)
+    cursor = conn.cursor()
+
+    # Insert the link; ignore if already linked (avoids duplicates)
+    cursor.execute('''
+        INSERT OR IGNORE INTO song_artists_link (song_id, artist_id)
+        VALUES (?, ?)
+    ''', (song_id, artist_id))
+
+    conn.commit()
+    conn.close()
+
+def construct_song_details(name, year, region, style_json):
+    styles = json.loads(style_json) if style_json else []
+    song = SongDetails(title=name, year=year, country=region, styles=styles)
+    return song
+
+
+# exclude_list = list of song id's to exclude
+def get_all_songs(exclude_list):
+    conn = sqlite3.connect(DATABASE_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id, song_name, song_year, song_style, song_region FROM songs")
+    rows = cursor.fetchall()
+
+    songs = []
+    for id, name, year, style_json, region in rows:
+        if (id in exclude_list):
+            continue
+
+        songs.append(construct_song_details(name, year, region, style_json))
+
+    conn.close()
+    return songs
+
+
+def get_song_by_id(song_id):
+    conn = sqlite3.connect(DATABASE_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT song_name, song_year, song_region, song_style FROM songs WHERE id = ?", (song_id,))
+    row = cursor.fetchone()
+    song = construct_song_details(row[0],row[1],row[2],row[3])
+
+    conn.close()
+    return song
+
+
+
 
 
 def reset_tables():
@@ -105,6 +162,7 @@ def reset_tables():
     # Delete all records from songs and artists
     cursor.execute("DELETE FROM songs")
     cursor.execute("DELETE FROM artists")
+    cursor.execute("DELETE FROM song_artists_link")
 
     # Reset the auto-increment counters
     cursor.execute("DELETE FROM sqlite_sequence WHERE name='songs'")

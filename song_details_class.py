@@ -7,7 +7,7 @@ class SongDetails:
         self.title = title
         self.clean_title = clean_string(title)
         self.year = year
-        self.country = country
+        self.country = country or "Unknown"
         self.styles = styles
 
     def __str__(self):
