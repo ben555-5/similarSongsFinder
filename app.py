@@ -98,7 +98,14 @@ def find_similar_songs(release_id, track_index):
     )
     song_id = add_song(song)
     results = get_best_matches(song_id)
-    return [f"{r[0].title} {r[1]}" for r in results]
+    output = []
+    for r in results:
+        title = str(r[0])  # force string
+        score = str(r[1])
+        formatted = f"{title} | {score}"
+        output.append(formatted)
+
+    return output
 
 
 
@@ -132,7 +139,6 @@ def run_collector_loop():
 
 
 if __name__ == '__main__':
-    reset_tables()
     threading.Thread(target=run_collector_loop, daemon=True).start()
     app.run(debug=True)
 
