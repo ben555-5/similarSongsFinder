@@ -1,12 +1,16 @@
 #region imports
 
+# ייבוא לקוח API של Discogs
 from discogs_lib import get_client
 import time
 from discogs_client.exceptions import HTTPError
 from json.decoder import JSONDecodeError
 
+# ייבוא מחלקות של שיר ואמן
 from song_details_class import SongDetails
 from artist_details_class import ArtistDetails
+
+# ייבוא פונקציות לעבודה עם מסד הנתונים
 from database import (
     init,
     reset_tables,
@@ -19,7 +23,10 @@ from database import (
 
 #region global setup
 
+# אתחול בסיס הנתונים
 init()
+
+# יצירת מופע של לקוח Discogs
 d = get_client()
 
 #endregion
@@ -27,6 +34,7 @@ d = get_client()
 #region main logic
 
 def collect_popular_songs(limit):
+    # חיפוש של ריליסים פופולריים לפי Discogs
     results = d.search(type="release", sort="hot")
     count = 0
 
@@ -35,12 +43,13 @@ def collect_popular_songs(limit):
             break
 
         try:
-            # Re-fetch full release with all details including artists
+            # שליפה מלאה של ריליס לפי מזהה
             release = d.release(partial_release.id)
 
             for track in release.tracklist:
-                time.sleep(0.1)  # Avoid hitting rate limit
+                time.sleep(0.1)  # השהייה כדי לא לעבור את מגבלת ה-API
 
+                # יצירת מופע של שיר ושמירתו במסד הנתונים
                 song = SongDetails(
                     title=track.title,
                     year=release.year,
@@ -49,10 +58,11 @@ def collect_popular_songs(limit):
                 )
                 song_id = add_song(song)
 
+                # מעבר על כל האומנים בריליס
                 for artist in release.artists:
                     try:
-                        # Optional: you can fetch full artist info here if needed
-                        artist_info = d.artist(artist.id)  # to access more fields if wanted
+                        # שליפה נוספת של מידע האמן (אם נרצה בעתיד)
+                        artist_info = d.artist(artist.id)
 
                         artist_details = ArtistDetails(artist.name)
                         artist_id = add_artist(artist_details)
@@ -62,30 +72,31 @@ def collect_popular_songs(limit):
 
                     except HTTPError as e:
                         if e.status_code == 429:
-                            print("⏳ Rate limit hit. Sleeping for 5 seconds...")
+                            print("⏳ חריגת קצב - המתנה של 5 שניות...")
                             time.sleep(5)
                         else:
-                            print(f"HTTP error for artist: {e}")
+                            print(f"שגיאת HTTP עבור אמן: {e}")
                     except JSONDecodeError:
-                        print("⏳ JSON error while loading artist. Sleeping...")
+                        print("⏳ שגיאת JSON בטעינת אמן - המתנה...")
                         time.sleep(5)
 
             count += 1
 
         except HTTPError as e:
             if e.status_code == 429:
-                print("⏳ Rate limit hit. Sleeping for 5 seconds...")
+                print("⏳ חריגת קצב - המתנה של 5 שניות...")
                 time.sleep(5)
             else:
-                print(f"HTTP error for release: {e}")
+                print(f"שגיאת HTTP עבור ריליס: {e}")
         except JSONDecodeError:
-            print("⏳ JSON error while loading release. Sleeping...")
+            print("⏳ שגיאת JSON בטעינת ריליס - המתנה...")
             time.sleep(5)
 
 #endregion
 
 #region entry point
 
+# כאשר הקובץ מופעל ישירות - איפוס הטבלאות והרצת האיסוף
 if __name__ == "__main__":
     reset_tables()
     collect_popular_songs(limit=1000)

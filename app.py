@@ -44,16 +44,19 @@ HTML = '''
 {% endif %}
 '''
 
+# פונקציה שממתינה לפי קצב הבקשות המותר
 def wait():
     left = DELAY - (time.time() - last_call[0])
     if left > 0: time.sleep(left)
     last_call[0] = time.time()
 
+# פונקציה שבודקת אם שם השיר הוא רמיקס
 def is_remix(title: str) -> bool:
     brackets = re.findall(r'[\(\[].*?[\)\]]', title.lower())
     keywords = ["remix", "edit", "version", "mix", "rework", "dub", "acoustic"]
     return any(k in b for b in brackets for k in keywords)
 
+# פונקציית ניקוד לשיר לפי התאמה לשאילתת המשתמש
 def score(song: SongDetails, q: str, rank: int):
     s = 0
     if clean_string(song.title) == clean_string(q): s += 30
@@ -62,6 +65,7 @@ def score(song: SongDetails, q: str, rank: int):
     s += max(0, 100 - rank)
     return s
 
+# פונקציה שמחזירה אפשרויות של שירים תואמים לשם שנמסר ע"י המשתמש
 def get_matching_songs(q):
     d, options, seen = get_client(), [], set()
     try:
@@ -69,7 +73,7 @@ def get_matching_songs(q):
             wait()
             try: rel = d.release(r.id)
             except: continue
-            for i, t in enumerate(rel.tracklist) or []:
+            for i, t in enumerate(rel.tracklist or []):
                 if is_remix(t.title): continue
                 if clean_string(q) in clean_string(t.title) and t.title not in seen:
                     seen.add(t.title)
@@ -81,6 +85,7 @@ def get_matching_songs(q):
         print(f"⚠️ Matching error: {e}")
     return options
 
+# פונקציה שמבצעת את השוואת השיר שנבחר לשאר השירים במסד ומחזירה את התוצאות
 def find_similar_songs(release_id, track_index):
     d = get_client()
     try:
@@ -100,15 +105,14 @@ def find_similar_songs(release_id, track_index):
     results = get_best_matches(song_id)
     output = []
     for r in results:
-        title = str(r[0])  # force string
+        title = str(r[0])
         score = str(r[1])
         formatted = f"{title} | {score}"
         output.append(formatted)
 
     return output
 
-
-
+# נקודת הכניסה הראשית של האפליקציה
 @app.route('/', methods=['GET', 'POST'])
 def index():
     res, opts, query = None, [], request.form.get('search_query', '').strip()
@@ -121,25 +125,27 @@ def index():
             session['last_time'] = time.time()
             if 'confirmed_song' in request.form:
                 track_id, song_id = request.form['confirmed_song'].split("|")
-                res = find_similar_songs(track_id,song_id)
+                res = find_similar_songs(track_id, song_id)
             elif query:
                 opts = get_matching_songs(query)
                 if not opts: res = ["No matches found. Try again."]
 
     return render_template_string(HTML, options=opts, results=res)
 
+# תהליך הרקע שאוסף שירים חדשים כל 10 דקות
 def run_collector_loop():
     while True:
         print("🔁 Running collector in background...")
         try:
-            collect_popular_songs(limit=100)  # you can raise the limit if needed
+            collect_popular_songs(limit=100)
         except Exception as e:
             print(f"⚠️ Collector error: {e}")
-        time.sleep(600)  # 10 minutes = 600 seconds
+        time.sleep(600)
 
-
+# הפעלת האפליקציה והתחלת תהליך הרקע
 if __name__ == '__main__':
     threading.Thread(target=run_collector_loop, daemon=True).start()
     app.run(debug=True)
+
 
 
