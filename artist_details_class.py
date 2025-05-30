@@ -1,4 +1,4 @@
-from utilities import clean_string
+from utils.utilities import clean_string
 
 class ArtistDetails:
     def __init__(self, artist_name):

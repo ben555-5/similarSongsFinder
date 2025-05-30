@@ -1,6 +1,6 @@
 from database import *
 from best_results_cache_class import BestResultCache
-from utilities import clean_string
+from utils.utilities import clean_string
 
 def calculate_score(song1, song2):
     score = 0

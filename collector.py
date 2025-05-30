@@ -35,7 +35,7 @@ d = get_client()
 
 def collect_popular_songs(limit):
     # חיפוש של ריליסים פופולריים לפי Discogs
-    results = d.search(type="release", sort="hot")
+    results = d.search(type="release", sort="hot", per_page=50)
     count = 0
 
     for partial_release in results:

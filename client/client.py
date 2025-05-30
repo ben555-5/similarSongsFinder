@@ -2,6 +2,8 @@ import socket
 import json
 import tkinter as tk
 from tkinter import simpledialog, messagebox
+from utils.caesar_cipher import caesar_decrypt, caesar_encrypt
+
 
 HOST = '127.0.0.1'
 PORT = 65432
@@ -35,8 +37,10 @@ class SongRecommenderApp:
 
     def send(self, msg):
         try:
+            msg = caesar_encrypt(msg)
             self.sock.sendall(msg.encode())
-            return json.loads(self.sock.recv(8192).decode())
+            decrypted_msg = self.sock.recv(65536).decode()
+            return json.loads(decrypted_msg)
         except Exception as e:
             messagebox.showerror("Communication Error", f"Failed to communicate with server:\n{e}")
             return []
