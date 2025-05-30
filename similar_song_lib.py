@@ -36,6 +36,8 @@ def calculate_score(song1, song2):
     try:
         if clean_string(song2.title) in clean_string(song1.title):
             score += 1
+        if clean_string(song2.title) == clean_string(song1.title):
+            score += 1
     except:
         pass
 
@@ -52,8 +54,3 @@ def get_best_matches(song_id):
     results = cache.get_best_results()
     print("the result of get best matches is: ", results)
     return results
-
-
-
-
-
