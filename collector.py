@@ -38,13 +38,13 @@ def collect_popular_songs(limit):
     results = d.search(type="release", sort="hot", per_page=50)
     count = 0
 
-    for partial_release in results:
+    for rel in results:
         if count >= limit:
             break
 
         try:
             # שליפה מלאה של ריליס לפי מזהה
-            release = d.release(partial_release.id)
+            release = d.release(rel.id)
 
             for track in release.tracklist:
                 time.sleep(0.1)  # השהייה כדי לא לעבור את מגבלת ה-API
