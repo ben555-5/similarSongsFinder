@@ -46,9 +46,16 @@ class SongRecommenderApp:
             messagebox.showerror("Missing Info", "Please enter both username and password.")
             return
 
-        user_id = verify_user(username, password)
-        if user_id:
-            self.user_id = user_id
+        msg = {
+            "username": username,
+            "password": password
+        }
+
+        response = self.send(msg, "login")
+        print(response)
+        print(type(response))
+        if response > 0:
+            self.user_id = response
             messagebox.showinfo("Login Approved", f"Welcome back, {username}!")  # ✅
             self.connect_to_server()
             self.show_main_ui()
@@ -62,15 +69,20 @@ class SongRecommenderApp:
         if not username or not password:
             messagebox.showerror("Missing Info", "Please enter both username and password.")
             return
+        msg = {
+            "username": username,
+            "password": password
+        }
 
-        success = add_user(username, password)
-        if success:
-            self.user_id = verify_user(username, password)
+        response = self.send(msg, "signup")
+        if response == "true":
             messagebox.showinfo("Signup Approved", f"Welcome, {username}!")  # ✅
             self.connect_to_server()
             self.show_main_ui()
+            self.login()
         else:
             messagebox.showerror("Signup Failed", "Username already exists.")  # ❌
+
 
     def connect_to_server(self):
         try:
@@ -95,9 +107,15 @@ class SongRecommenderApp:
         self.loading_label = tk.Label(self.master, text="", fg="blue")
         self.loading_label.pack()
 
-    def send(self, msg):
+    def send(self, msg, msg_type):
+        payload = {
+            "msg": msg,
+            "msg_type": msg_type
+        }
+        payload_string = json.dumps(payload)
+
         try:
-            encrypted = caesar_encrypt(msg)
+            encrypted = caesar_encrypt(payload_string)
             self.sock.sendall(encrypted.encode())
             response_encrypted = self.sock.recv(65536).decode()
             decrypted = caesar_decrypt(response_encrypted)
@@ -115,7 +133,7 @@ class SongRecommenderApp:
         self.loading_label.config(text="🔄 Searching...")
         self.master.update_idletasks()
 
-        options = self.send(f"SEARCH:{query}")
+        options = self.send(str(query), "options")
         self.loading_label.config(text="")
 
         if not options:
@@ -130,8 +148,8 @@ class SongRecommenderApp:
         self.loading_label.config(text="🎧 Finding similar songs...")
         self.master.update_idletasks()
 
-        selected_track_id = options[choice - 1][0]
-        matches = self.send(selected_track_id)
+        selected_track_id = options[choice - 1]
+        matches = self.send(selected_track_id, "matches")
         self.loading_label.config(text="")
 
         if matches:

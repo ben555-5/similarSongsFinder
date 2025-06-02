@@ -188,8 +188,9 @@ def reset_tables():
     conn.close()
     print("🔁 Tables reset and ID counters cleared.")
 
-# User signup
+
 def add_user(username, password):
+    """ User signup """
     password_hash = hashlib.sha256(password.encode()).hexdigest()
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
@@ -202,15 +203,18 @@ def add_user(username, password):
     finally:
         conn.close()
 
-# User login
+
 def verify_user(username, password):
+    """ User Login """
     password_hash = hashlib.sha256(password.encode()).hexdigest()
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
     cursor.execute("SELECT id FROM users WHERE username = ? AND password_hash = ?", (username, password_hash))
     result = cursor.fetchone()
     conn.close()
-    return result[0] if result else None
+    if result[0]:
+        return result[0][0]
+    return -1
 
 # Log a user's song confirmation
 def log_search(user_id, song_id):
