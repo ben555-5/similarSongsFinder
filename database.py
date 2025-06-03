@@ -22,7 +22,8 @@ def create_database():
             clean_song_name TEXT NOT NULL,
             song_year INTEGER NOT NULL,
             song_style TEXT NOT NULL,
-            song_region TEXT NOT NULL
+            song_region TEXT NOT NULL,
+            song_release TEXT 
         )
     ''')
 
@@ -83,14 +84,17 @@ def add_song(song_details: SongDetails):
         song_id = res[0]
     else:
         cursor.execute('''
-            INSERT INTO songs (song_name, clean_song_name, song_year, song_style, song_region)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO songs (song_name, clean_song_name, song_year, song_style, song_region, song_release)
+            VALUES (?, ?, ?, ?, ?, ?)
         ''', (
             song_details.title,
             song_details.clean_title,
             song_details.year,
             json.dumps(song_details.styles),
-            song_details.country
+            song_details.country,
+            song_details.release
+
+
         ))
         song_id = cursor.lastrowid
 
@@ -156,7 +160,12 @@ def get_all_songs(exclude_list):
     conn.close()
     return songs
 
+def get_song_id(playload_message):
+    return True
+
+
 # Get song by its database ID
+
 def get_song_by_id(song_id):
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
@@ -213,7 +222,7 @@ def verify_user(username, password):
     result = cursor.fetchone()
     conn.close()
     if result[0]:
-        return result[0][0]
+        return result[0]
     return -1
 
 # Log a user's song confirmation

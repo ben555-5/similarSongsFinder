@@ -1,6 +1,7 @@
-from database import *
+from database import add_song, get_song_by_id, get_all_songs
 from best_results_cache_class import BestResultCache
 from utils.utilities import clean_string
+from song_details_class import SongDetails
 
 def calculate_score(song1, song2):
     score = 0
@@ -43,7 +44,27 @@ def calculate_score(song1, song2):
 
     return score
 
-def get_best_matches(song_id):
+def get_best_matches(song_info):
+    """
+    song_info:
+    label
+    song name
+    clean_song_name
+    song_year
+    song_style
+    song_region
+    song_release
+    """
+
+    song_info_splitted = song_info.split("|")
+    song = SongDetails(
+        title=song_info_splitted[1],
+        year=song_info_splitted[3],
+        styles=song_info_splitted[4],
+        country=song_info_splitted[5],
+        release_id=song_info_splitted[6]
+    )
+    song_id = add_song(song)
     user_song = get_song_by_id(song_id)
     song_list = get_all_songs([song_id])
     cache = BestResultCache(max_size=10)
@@ -53,4 +74,8 @@ def get_best_matches(song_id):
 
     results = cache.get_best_results()
     print("the result of get best matches is: ", results)
-    return results
+    result_strings = [
+        f"{song.title} ({song.year}) | {score}"
+        for song, score in results
+    ]
+    return result_strings

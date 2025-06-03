@@ -31,6 +31,8 @@ def get_matching_songs(q):
 
     try:
         releases = discogs_client.search(track=q, sort="score", type="release", per_page=10)
+        print(f"Searching Discogs for: {q}")
+        print(f"Found {len(releases)} releases")
     except Exception as e:
         print(f"⚠️ Matching error: {e}")
 
@@ -54,8 +56,17 @@ def get_matching_songs(q):
                     seen.add(t.title)
                     artist = ', '.join(a.name for a in rel.artists) if rel.artists else "Unknown Artist"
                     album = rel.title or "Unknown Album"
-                    label = f"{t.title} by {artist} (Album: {album}) | release id: {rel.id}"
-                    options.append(label)
+                    label = f"{t.title} by {artist} (Album: {album})"
+                    payload = "|".join([
+                        label,
+                        t.title,
+                        clean_string(t.title),
+                        str(rel.year),
+                        ",".join(rel.styles),
+                        rel.country,
+                        str(rel.id)
+                    ])
+                    options.append(payload)
                     if len(options) >= 10:
                         return options
         except Exception as e:
@@ -88,32 +99,34 @@ def handle_client(conn, addr):
             msg = payload_dict.get("msg")
             msg_type = payload_dict.get("msg_type")
             print(f"🔍 Received query: {msg}")
-            print(msg_type)
+            print(f"msg_type:{msg_type}")
 
             # identify message as matches call
             if msg_type == "options":
-                results = get_matching_songs(msg)
-                response_json = json.dumps(results)
+                response = get_matching_songs(msg)
 
             elif msg_type == "matches":
-                results = get_best_matches(int(msg))
-                response_json = json.dumps(results)
+                response = get_best_matches(msg)
 
             elif msg_type == "signup":
                 response = add_user(
                     msg.get("username"),
                     msg.get("password")
                 )
-                print(response)
-                response_json = json.dumps(response)
+                if response:
+                    response = verify_user(
+                        msg.get("username"),
+                        msg.get("password")
+                    )
+                else:
+                    response = -1
 
             elif msg_type == "login":
                 response = verify_user(
                     msg.get("username"),
                     msg.get("password")
                 )
-                response_json = json.dumps(response)
-
+            response_json = json.dumps(response)
             encrypted = caesar_encrypt(response_json)
             conn.sendall(encrypted.encode())
 

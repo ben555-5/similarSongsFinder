@@ -46,18 +46,18 @@ class SongRecommenderApp:
             messagebox.showerror("Missing Info", "Please enter both username and password.")
             return
 
+        self.connect_to_server()
+
+
         msg = {
             "username": username,
             "password": password
         }
 
         response = self.send(msg, "login")
-        print(response)
-        print(type(response))
         if response > 0:
             self.user_id = response
             messagebox.showinfo("Login Approved", f"Welcome back, {username}!")  # ✅
-            self.connect_to_server()
             self.show_main_ui()
         else:
             messagebox.showerror("Login Rejected", "Invalid username or password.")  # ❌
@@ -69,17 +69,18 @@ class SongRecommenderApp:
         if not username or not password:
             messagebox.showerror("Missing Info", "Please enter both username and password.")
             return
+        self.connect_to_server()
         msg = {
             "username": username,
             "password": password
         }
 
         response = self.send(msg, "signup")
-        if response == "true":
+        if response > 0:
+            self.user_id = response
             messagebox.showinfo("Signup Approved", f"Welcome, {username}!")  # ✅
-            self.connect_to_server()
             self.show_main_ui()
-            self.login()
+
         else:
             messagebox.showerror("Signup Failed", "Username already exists.")  # ❌
 
@@ -113,16 +114,18 @@ class SongRecommenderApp:
             "msg_type": msg_type
         }
         payload_string = json.dumps(payload)
+        encrypted = caesar_encrypt(payload_string)
 
         try:
-            encrypted = caesar_encrypt(payload_string)
             self.sock.sendall(encrypted.encode())
             response_encrypted = self.sock.recv(65536).decode()
-            decrypted = caesar_decrypt(response_encrypted)
-            return json.loads(decrypted)
         except Exception as e:
             messagebox.showerror("Communication Error", f"Failed to communicate with server:\n{e}")
-            return []
+            return None
+        decrypted = caesar_decrypt(response_encrypted)
+        return json.loads(decrypted)
+
+
 
     def search_song(self):
         query = self.entry.get().strip()
@@ -130,17 +133,22 @@ class SongRecommenderApp:
             messagebox.showinfo("Missing Input", "Please enter a song name.")
             return
 
+        if len(query) < 3:
+            messagebox.showinfo("Too Short", "Please enter at least 3 characters.")
+            return
+
         self.loading_label.config(text="🔄 Searching...")
         self.master.update_idletasks()
 
         options = self.send(str(query), "options")
+        print(f"options: {options}")
         self.loading_label.config(text="")
 
         if not options:
             messagebox.showinfo("No Matches", "No matching songs found.")
             return
 
-        choice_text = "\n".join([f"{i+1}. {opt[1]}" for i, opt in enumerate(options)])
+        choice_text = "\n".join([f"{i + 1}. {opt.split('|')[0].strip()}" for i, opt in enumerate(options)])
         choice = tk.simpledialog.askinteger("Choose Song", choice_text + "\n\nEnter number (1-10):")
         if not choice or choice < 1 or choice > len(options):
             return
